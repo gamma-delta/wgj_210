@@ -1,5 +1,5 @@
 [package]
-name = "omegaquad"
+name = "wgj_210"
 version = "0.1.0"
 authors = ["gamma-delta <29877714+gamma-delta@users.noreply.github.com>"]
 edition = "2018"
@@ -22,6 +22,8 @@ quad-rand = { version = "0.2.1", features = ["rand"] }
 getrandom = { version = "0.2.2", features = ["custom"] }
 anyhow = "1.0.40"
 regex = "1.5.4"
+ahash = "0.7.4"
+smallvec = "1.6.1"
 
 [features]
 default = ["thread_loop"]

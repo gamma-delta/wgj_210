@@ -1,0 +1,72 @@
+fragment shaders?
+
+fragments are:
+- something broken into sharp shards
+- something abruptly unfinished (sentence fragments)
+
+i'm reminded of those exercises in chinese where i have to put
+the sentence fragments together into a grammatical sentence...
+
+literally a jigsaw puzzle would work.
+
+We could have an alien dictionary game?
+Some alien ship was lost in space, and we're getting fragments of their transmissions.
+
+There are a couple ways to do this:
+- Have a bunch of example sentences, and you have to arrange fragments into a final sentence.
+  this is just the bs you put on IQ tests...
+- Have a dictionary of rules, either level-by-level or gradually exposed to you over time.
+- Have an *invisible* dictionary of rules, like in that Understand game I'm trying to not spoil
+  for myself.
+
+super-bonus points if everything actually means something?!
+
+Game loop:
+- Get a list of sentence fragments.
+- Try to arrange them into a sentence.
+- See if you succeed.
+- Story proceeds, send it off to the translators and they give you the translation.
+
+Do we put a button to "check"?
+The Witness succeeds because it's really irritating to brute-force...
+having N+1 squares on a panel grows the possibilities much faster than
+N+1 fragments.
+
+Perhaps the aliens speak non-linearly?? ooooooh
+yeah yeah you get nominoes of symbols
+
+I can borrow Sendralese text aesthetic from IC Punk,
+or infinifactory overlords.
+
+Do we actually implement a whole parsing system or do we just match against
+The Solution in memory?
+parsing could be interesting. In fact, if i have it be parsing,
+i force it to not be too hard cause i have to parse it.
+
+I'm imagining some kind of basic "subject verb object" structure.
+Main elements go across the baseline, and modifiers go below.
+
+To give our parsing something to start from, we should have some
+"start transmission" symbol.
+
+The shapes of symbols probably should indicate their part of speech.
+- Full outer ring = particle
+- Lone pixel = noun
+- 2 parts = verb.
+- Each 2x2 block adds one level of "modifier"
+
+So, something with a lone pixel and a 2x2 block is a noun-modifier (adjective).
+Lone pixel & two 2x2 blocks is a noun-modifier-modifier (adverb).
+
+The main baseline goes: start subject... verb object...
+Below a baseline symbol goes modifiers; above them goes modifier-modifiers.
+
+So in
+
+ F
+
+#ABC
+ D
+ E
+
+D modifies A, E modifies A and F modifies D.

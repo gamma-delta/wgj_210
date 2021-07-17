@@ -1036,25 +1036,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "omegaquad"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bincode",
- "cogs-gamedev",
- "crossbeam",
- "enum-map",
- "getrandom",
- "macroquad",
- "once_cell",
- "quad-rand",
- "quad-wasmnastics",
- "rand",
- "regex",
- "serde",
-]
-
-[[package]]
 name = "once_cell"
 version = "1.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1642,6 +1623,27 @@ checksum = "e828417b379f3df7111d3a2a9e5753706cae29c41f7c4029ee9fd77f3e09e582"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "wgj_210"
+version = "0.1.0"
+dependencies = [
+ "ahash 0.7.4",
+ "anyhow",
+ "bincode",
+ "cogs-gamedev",
+ "crossbeam",
+ "enum-map",
+ "getrandom",
+ "macroquad",
+ "once_cell",
+ "quad-rand",
+ "quad-wasmnastics",
+ "rand",
+ "regex",
+ "serde",
+ "smallvec",
 ]
 
 [[package]]

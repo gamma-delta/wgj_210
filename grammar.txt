@@ -1,0 +1,17 @@
+Sentences take the form: START NOUN+ VERB NOUN*
+This is called the "baseline."
+
+Modifiers modifying things on the baseline go below the thing they modify.
+Modifiers modifying things below the baseline go in that index opposite the baseline.
+
+Multiple nouns in a row require the "collater" symbol after them.
+
+To find what part of speech a symbol is, check this top-to-bottom.
+- If it has a ring all the way around it, it's a particle.
+- If it has 2fold rotational symmetry it's a noun.
+- Otherwise it's a verb.
+
+For each free single pixel, it goes one layer of modifier deep.
+So 1 free pixel on a noun is a noun, 2 is a noun-modifier, 3 is a noun-modifier-modifier.
+
+All symbols on one vertical line must have the same number of islands.

@@ -6,6 +6,9 @@ mod controls;
 mod modes;
 mod utils;
 
+mod simulator;
+
+
 // `getrandom` doesn't support WASM so we use quadrand's rng for it.
 #[cfg(target_arch = "wasm32")]
 mod wasm_random_impl;
