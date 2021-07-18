@@ -5,12 +5,16 @@
 
 use std::str::FromStr;
 
-use ahash::AHashSet;
+use ahash::{AHashMap, AHashSet};
 use anyhow::bail;
 use cogs_gamedev::grids::{Direction4, ICoord};
+use itertools::Itertools;
+use macroquad::prelude::{Image, Rect, Texture2D};
+
+use crate::assets::Assets;
 
 /// Info about a symbol.
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Symbol {
     pub part_of_speech: PartOfSpeech,
     /// The numerical code representing a bitmap.
@@ -19,6 +23,60 @@ pub struct Symbol {
     ///
     /// 1 = filled, 0 = empty
     pub code: u32,
+}
+
+impl Symbol {
+    /// The size of a side of the atlas.
+    pub const ATLAS_SIDE: u16 = 256;
+    /// Number of symbols that fit in the atlas per row. (And per column.)
+    pub const SYMBOLS_PER_ROW: u16 = 256 / 5;
+
+    /// Stitch a bunch of symbol codes into the atlas texture.
+    ///
+    /// The 5x5 symbols are packed into a 256x256 texture.
+    /// (This does mean there can only be `(256 / 5) ^ 2 = 2601` unique symbols,
+    /// but I question what you're doing with all those.)
+    ///
+    /// Also returns a mapping of symbol codes to their index into the texture.
+    pub fn stitch_atlas(codes: impl Iterator<Item = u32>, assets: &Assets) -> AHashMap<u32, usize> {
+        let mut img =
+            Image::gen_image_color(Self::ATLAS_SIDE, Self::ATLAS_SIDE, macroquad::color::BLANK);
+
+        codes
+            .unique()
+            .enumerate()
+            .map(|(idx, code)| {
+                let rect = Self::slice(idx);
+                for dx in 0..5 {
+                    for dy in 0..5 {
+                        let px = rect.x as u32 + dx;
+                        let py = rect.y as u32 + dy;
+
+                        let bitpos = 5 * dy + dx;
+                        let bit = code & bitpos;
+                        if bit != 0 {
+                            img.set_pixel(px, py, macroquad::color::WHITE);
+                        }
+                    }
+                }
+
+                (code, idx)
+            })
+            .collect()
+    }
+
+    /// Get the rectangle needed to slice out this symbol's texture from the atlas.
+    pub fn slice(idx: usize) -> Rect {
+        let x = idx % Self::SYMBOLS_PER_ROW as usize;
+        let y = idx / Self::SYMBOLS_PER_ROW as usize;
+
+        Rect {
+            x: x as f32,
+            y: y as f32,
+            w: 5.0,
+            h: 5.0,
+        }
+    }
 }
 
 /// Parse a 5x5 block of characters, separated by newlines.
@@ -161,5 +219,25 @@ impl PartOfSpeech {
                 depth: single_pixels_found,
             }
         }
+    }
+
+    /// Returns `true` if the part_of_speech is [`ParticleStart`].
+    pub fn is_particle_start(&self) -> bool {
+        matches!(self, Self::ParticleStart)
+    }
+
+    /// Returns `true` if the part_of_speech is [`ParticleCollate`].
+    pub fn is_particle_collate(&self) -> bool {
+        matches!(self, Self::ParticleCollate)
+    }
+
+    /// Returns `true` if the part_of_speech is [`Noun`].
+    pub fn is_noun(&self) -> bool {
+        matches!(self, Self::Noun { .. })
+    }
+
+    /// Returns `true` if the part_of_speech is [`Verb`].
+    pub fn is_verb(&self) -> bool {
+        matches!(self, Self::Verb { .. })
     }
 }

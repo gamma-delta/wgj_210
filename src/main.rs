@@ -1,4 +1,6 @@
 #![feature(try_blocks)]
+#![feature(bool_to_option)]
+#![feature(option_result_contains)]
 
 mod assets;
 mod boilerplates;

@@ -1,6 +1,6 @@
-mod levels;
-mod symbols;
-mod test;
+pub mod board;
+pub mod levels;
+mod parse;
+pub mod symbols;
 
-pub use levels::*;
-pub use symbols::*;
+mod test;

@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-use super::*;
+use super::symbols::*;
 
 #[test]
 fn parse_parts_of_speech() {

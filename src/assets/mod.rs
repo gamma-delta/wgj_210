@@ -9,16 +9,26 @@ use once_cell::sync::Lazy;
 
 use std::path::PathBuf;
 
+use crate::simulator::symbols::Symbol;
+
 pub struct Assets {
     pub textures: Textures,
     pub sounds: Sounds,
+
+    /// Global symbol atlas. Yes global mutability bad shut up
+    pub symbol_atlas: Texture2D,
 }
 
 impl Assets {
     pub async fn init() -> Self {
+        let symbol_atlas = Image::gen_image_color(Symbol::ATLAS_SIDE, Symbol::ATLAS_SIDE, BLANK);
+        let symbol_atlas = Texture2D::from_image(&symbol_atlas);
+        symbol_atlas.set_filter(FilterMode::Nearest);
+
         Self {
             textures: Textures::init().await,
             sounds: Sounds::init().await,
+            symbol_atlas,
         }
     }
 }
@@ -28,14 +38,19 @@ pub struct Textures {
 
     pub title_banner: Texture2D,
     pub billboard_patch9: Texture2D,
+
+    pub checkerboard: Texture2D,
 }
 
 impl Textures {
     async fn init() -> Self {
         Self {
             fonts: Fonts::init().await,
+
             title_banner: texture("title/banner").await,
             billboard_patch9: texture("ui/billboard_patch9").await,
+
+            checkerboard: texture("checkerboard").await,
         }
     }
 }
