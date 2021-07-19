@@ -9,10 +9,10 @@ use crate::{
     HEIGHT, WIDTH,
 };
 
-use super::{SelectState, SYMBOL_GAP};
+use super::{px_to_coord, SelectState, SYMBOL_GAP};
 
-const TILES_ACROSS: usize = (WIDTH / SYMBOL_GAP) as usize;
-const TILES_DOWN: usize = (HEIGHT / SYMBOL_GAP) as usize;
+const TILES_ACROSS: usize = (WIDTH / SYMBOL_GAP * 2.0) as usize;
+const TILES_DOWN: usize = (HEIGHT / SYMBOL_GAP * 2.0) as usize;
 
 pub(super) struct Drawer {
     pub board: Board,
@@ -26,15 +26,9 @@ pub(super) struct Drawer {
 
 impl GamemodeDrawer for Drawer {
     fn draw(&self, assets: &Assets, frame_info: FrameInfo) {
-        let mouse_world = self.view
-            + if let Some(origin) = self.drag_origin {
-                vec2(mx, my) - origin
-            } else {
-                vec2(mx, my)
-            } / SYMBOL_GAP;
+        let (mx, my) = mouse_position_pixel();
         let view = if let Some(origin) = self.drag_origin {
-            let (mx, my) = mouse_position_pixel();
-            self.view - (vec2(mx, my) - origin)
+            self.view - (vec2(mx, my) - origin) / SYMBOL_GAP
         } else {
             self.view
         };
@@ -43,32 +37,38 @@ impl GamemodeDrawer for Drawer {
             for tile_dy in -1..=TILES_DOWN as i32 {
                 // symbol positions
                 // each tile is 2x symbol size
-                let tile_pos = view + vec2(tile_dx as f32 * 2.0, tile_dy as f32 * 2.0);
-                let tile_x = tile_pos.x.round();
-                let tile_y = tile_pos.y.round();
+                let corner = (vec2(tile_dx as f32, tile_dy as f32)
+                    - vec2(view.x.fract(), view.y.fract()))
+                    * SYMBOL_GAP
+                    * 2.0;
+                let corner = corner.round();
 
-                // each tile is 12x12!
-                // here are pixel offsets
-                let dx = tile_dx as f32 * 2.0 * SYMBOL_GAP;
-                let dy = tile_dy as f32 * 2.0 * SYMBOL_GAP;
-                // when we pan a little to see the right, view increases,
-                // and we expect to see the tiles shift left.
-                let px = dx + view.x.abs().fract() * 2.0 * SYMBOL_GAP;
-                let py = dy + view.y.abs().fract() * 2.0 * SYMBOL_GAP;
-
-                let sx = if tile_x == 0.0 { 0.0 } else { 2.0 * SYMBOL_GAP };
-                let sy = if tile_y == 0.0 { 0.0 } else { 2.0 * SYMBOL_GAP };
+                // Check the center of the tile for position to avoid imprecision errors
+                let absolute_pos = px_to_coord(corner + Vec2::splat(SYMBOL_GAP), view);
+                let sx = if absolute_pos.x == 0 {
+                    0.0
+                } else {
+                    SYMBOL_GAP * 2.0
+                };
+                let sy = if absolute_pos.y == 0 {
+                    0.0
+                } else {
+                    SYMBOL_GAP * 2.0
+                };
 
                 draw_texture_ex(
                     assets.textures.checkerboard,
-                    px,
-                    py,
+                    corner.x,
+                    corner.y,
                     WHITE,
                     DrawTextureParams {
                         source: Some(Rect::new(sx, sy, SYMBOL_GAP * 2.0, SYMBOL_GAP * 2.0)),
                         ..Default::default()
                     },
                 );
+                if absolute_pos.x % 3 == 0 || absolute_pos.y % 3 == 0 {
+                    draw_text(&absolute_pos.to_string(), corner.x, corner.y, 8.0, WHITE);
+                }
             }
         }
     }

@@ -66,3 +66,10 @@ the Rapier physics engine. That way I can store what line something is on, or us
 key into some hashmap if more associated information is needed.
 (In another game I'm working on using Hecs ECS, each `Collider` and `RigidBody`'s userdata is
 set to the entity handle serialized to bits.)
+
+## July 18th, Night 3
+
+I managed to write next to absolutely nothing today, I am very tired, and don't want to go to work
+tomorrow.
+
+Ugh.
