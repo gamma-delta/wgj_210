@@ -9,9 +9,13 @@ use ahash::{AHashMap, AHashSet};
 use anyhow::bail;
 use cogs_gamedev::grids::{Direction4, ICoord};
 use itertools::Itertools;
-use macroquad::prelude::{Image, Rect, Texture2D};
+use macroquad::prelude::{Image, Rect, Texture2D, Vec2};
 
 use crate::assets::Assets;
+
+pub const SYMBOL_SIZE: usize = 5;
+pub const SYMBOL_DISPLAY_SIZE: f32 = 15.0;
+pub const SYMBOL_GAP: f32 = 16.0;
 
 /// Info about a symbol.
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -29,7 +33,7 @@ impl Symbol {
     /// The size of a side of the atlas.
     pub const ATLAS_SIDE: u16 = 256;
     /// Number of symbols that fit in the atlas per row. (And per column.)
-    pub const SYMBOLS_PER_ROW: u16 = 256 / 5;
+    pub const SYMBOLS_PER_ROW: u16 = Symbol::ATLAS_SIDE / 5;
 
     /// Stitch a bunch of symbol codes into the atlas texture.
     ///
@@ -42,27 +46,32 @@ impl Symbol {
         let mut img =
             Image::gen_image_color(Self::ATLAS_SIDE, Self::ATLAS_SIDE, macroquad::color::BLANK);
 
-        codes
+        let out = codes
             .unique()
             .enumerate()
             .map(|(idx, code)| {
                 let rect = Self::slice(idx);
-                for dx in 0..5 {
-                    for dy in 0..5 {
-                        let px = rect.x as u32 + dx;
-                        let py = rect.y as u32 + dy;
+                for dx in 0..SYMBOL_SIZE {
+                    for dy in 0..SYMBOL_SIZE {
+                        let px = rect.x as usize + dx;
+                        let py = rect.y as usize + dy;
 
-                        let bitpos = 5 * dy + dx;
-                        let bit = code & bitpos;
+                        let bitpos = SYMBOL_SIZE * dy + dx;
+                        let bit = code & (1 << (24 - bitpos));
                         if bit != 0 {
-                            img.set_pixel(px, py, macroquad::color::WHITE);
+                            // Draw it in white so we can change it to any color
+                            img.set_pixel(px as u32, py as u32, macroquad::color::WHITE);
                         }
                     }
                 }
 
                 (code, idx)
             })
-            .collect()
+            .collect();
+
+        assets.symbol_atlas.update(&img);
+
+        out
     }
 
     /// Get the rectangle needed to slice out this symbol's texture from the atlas.
@@ -71,11 +80,26 @@ impl Symbol {
         let y = idx / Self::SYMBOLS_PER_ROW as usize;
 
         Rect {
-            x: x as f32,
-            y: y as f32,
-            w: 5.0,
-            h: 5.0,
+            x: x as f32 * SYMBOL_SIZE as f32,
+            y: y as f32 * SYMBOL_SIZE as f32,
+            w: SYMBOL_SIZE as f32,
+            h: SYMBOL_SIZE as f32,
         }
+    }
+
+    pub fn draw(&self, corner: Vec2, idx: usize, assets: &Assets) {
+        use macroquad::prelude::*;
+        draw_texture_ex(
+            assets.symbol_atlas,
+            corner.x,
+            corner.y,
+            BLACK,
+            DrawTextureParams {
+                source: Some(Symbol::slice(idx)),
+                dest_size: Some(Vec2::splat(SYMBOL_DISPLAY_SIZE)),
+                ..Default::default()
+            },
+        );
     }
 }
 

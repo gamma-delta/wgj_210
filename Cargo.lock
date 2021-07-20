@@ -1737,6 +1737,7 @@ dependencies = [
  "regex",
  "serde",
  "smallvec 1.6.1",
+ "toml",
 ]
 
 [[package]]

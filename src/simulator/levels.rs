@@ -11,7 +11,6 @@ use super::{board::Board, symbols::Symbol};
 /// Level as directly serialized from a file.
 #[derive(Debug, Deserialize)]
 pub struct RawLevel {
-    id: String,
     name: String,
     /// Like minecraft crafting, you associate characters with symbols
     /// and then arrange the characters into the wanted shapes.
@@ -21,7 +20,7 @@ pub struct RawLevel {
 
 impl RawLevel {
     /// Clone and convert this into a level.
-    pub fn to_level(&self) -> anyhow::Result<Level> {
+    pub fn to_level(&self, filename: String) -> anyhow::Result<Level> {
         let char_symbols = self
             .symbols
             .iter()
@@ -67,21 +66,20 @@ impl RawLevel {
         let mut working_on = Vec::new();
 
         for pos in laid_out.keys() {
-            if flooded_to.insert(*pos) {
+            if !flooded_to.contains(pos) {
                 // i've never met this pos in my life
                 let mut fragment = SmallVec::new();
                 working_on.push(*pos);
 
                 while let Some(pos) = working_on.pop() {
-                    fragment.push(pos);
-                    debug_assert!(!flooded_to.insert(pos), "{} was already present", pos);
+                    if flooded_to.insert(pos) {
+                        fragment.push(pos);
 
-                    for present_new_neighbor in pos
-                        .neighbors4()
-                        .iter()
-                        .filter(|&nbor| laid_out.contains_key(nbor) && !flooded_to.contains(nbor))
-                    {
-                        working_on.push(*present_new_neighbor);
+                        for present_new_neighbor in pos.neighbors4().iter().filter(|&nbor| {
+                            laid_out.contains_key(nbor) && !flooded_to.contains(nbor)
+                        }) {
+                            working_on.push(*present_new_neighbor);
+                        }
                     }
                 }
 
@@ -104,7 +102,7 @@ impl RawLevel {
         let board = Board { symbols, fragments };
 
         Ok(Level {
-            id: self.id.clone(),
+            id: filename,
             name: self.name.clone(),
             original_board: board,
         })

@@ -12,15 +12,22 @@ use crate::{
     assets::Assets,
     boilerplates::{FrameInfo, Gamemode, GamemodeDrawer, Transition},
     controls::{Control, InputSubscriber},
-    simulator::{board::Board, symbols::Symbol},
+    simulator::{
+        board::Board,
+        symbols::{Symbol, SYMBOL_GAP},
+    },
     utils::draw::mouse_position_pixel,
     HEIGHT, WIDTH,
 };
 
 use self::draw::Drawer;
 
-const SYMBOL_DISPLAY_SIZE: f32 = 10.0;
-const SYMBOL_GAP: f32 = 11.0;
+/// Place to start drawing the board from
+const BOARD_ORIGIN_X: f32 = 16.0;
+const BOARD_ORIGIN_Y: f32 = 16.0;
+
+const SYMBOLS_ACROSS: usize = 13;
+const SYMBOLS_DOWN: usize = 13;
 
 pub struct ModePlaying {
     level_id: String,
@@ -29,19 +36,11 @@ pub struct ModePlaying {
     /// Mapping of symbol codes to atlas indices
     symbol_indices: AHashMap<u32, usize>,
 
-    /// Coordinate the camera is centered on
-    view: Vec2,
-    /// If this is Some, we're right-clicking to drag the camera view,
-    /// and this contains the original mouse position in pixel coordinates.
-    ///
-    /// `self.view` isn't actually updated until the camera is released; the panning is implemented in
-    /// `draw` to make it less laggy.
-    drag_origin: Option<Vec2>,
-
     selection: SelectState,
 }
 
 #[derive(Debug, Clone)]
+#[allow(clippy::large_enum_variant)]
 enum SelectState {
     None,
     /// We've picked up a fragment.
@@ -58,16 +57,16 @@ enum SelectState {
 }
 
 impl ModePlaying {
-    pub fn new_temp() -> Self {
+    pub fn new_from_level(idx: usize, assets: &Assets) -> Self {
+        let level = &assets.levels[idx];
+        let board = level.original_board.clone();
+        let symbol_indices =
+            Symbol::stitch_atlas(board.symbols.values().map(|sym| sym.code), assets);
+
         Self {
-            level_id: "temp".to_string(),
-            board: Board {
-                symbols: AHashMap::new(),
-                fragments: Vec::new(),
-            },
-            symbol_indices: AHashMap::new(),
-            view: Vec2::ZERO,
-            drag_origin: None,
+            level_id: level.id.clone(),
+            board,
+            symbol_indices,
             selection: SelectState::None,
         }
     }
@@ -82,16 +81,14 @@ impl Gamemode for ModePlaying {
     ) -> Transition {
         let (mx, my) = mouse_position_pixel();
 
-        // Where are we truly centered on?
-        let view = if let Some(origin) = self.drag_origin {
-            self.view - (vec2(mx, my) - origin) / SYMBOL_GAP
-        } else {
-            self.view
-        };
-        let hovered_coord = px_to_coord(vec2(mx, my), view);
+        let hovered_coord = px_to_coord(vec2(mx, my));
 
-        if controls.clicked_down(Control::RightClick) {
+        if controls.clicked_down(Control::Click) {
             dbg!(hovered_coord);
+        }
+
+        if controls.clicked_down(Control::Debug) {
+            dbg!(self.board.symbols.get(&hovered_coord), &self.selection);
         }
 
         match &self.selection {
@@ -145,23 +142,6 @@ impl Gamemode for ModePlaying {
             }
         }
 
-        match self.drag_origin {
-            None => {
-                if controls.clicked_down(Control::RightClick) {
-                    self.drag_origin = Some(vec2(mx, my));
-                }
-            }
-            Some(origin) => {
-                if !controls.pressed(Control::RightClick) {
-                    // snap the view to that position
-                    let dmouse = vec2(mx, my) - origin;
-                    self.view -= dmouse / SYMBOL_GAP;
-                    println!("view updated to {}", self.view);
-                    self.drag_origin = None;
-                }
-            }
-        }
-
         Transition::None
     }
 
@@ -169,22 +149,20 @@ impl Gamemode for ModePlaying {
         Box::new(Drawer {
             board: self.board.clone(),
             symbol_indices: self.symbol_indices.clone(),
-            drag_origin: self.drag_origin,
             selection: self.selection.clone(),
-            view: self.view,
         })
     }
 }
 
 /// Given a coordinate in pixel space, and the center of the screen in world space,
 /// get the world space coordinates the pixel lies within.
-fn px_to_coord(pos: Vec2, view: Vec2) -> ICoord {
-    let adjust = (pos - vec2(WIDTH, HEIGHT) / 2.0) / SYMBOL_GAP + view;
+fn px_to_coord(pos: Vec2) -> ICoord {
+    let adjust = (pos - vec2(BOARD_ORIGIN_X, BOARD_ORIGIN_Y)) / SYMBOL_GAP - Vec2::splat(0.5);
     ICoord::new(adjust.x.round() as isize, adjust.y.round() as isize)
 }
 
 /// Given a coordinate in world space and the center of the screen in world space,
 /// get the pixel coordinates of its center.
-fn coord_to_px(pos: ICoord, view: Vec2) -> Vec2 {
-    ((vec2(pos.x as f32, pos.y as f32) - view) * SYMBOL_GAP + vec2(WIDTH, HEIGHT) / 2.0).round()
+fn coord_to_px(pos: ICoord) -> Vec2 {
+    (vec2(pos.x as f32, pos.y as f32) * SYMBOL_GAP).round() + vec2(BOARD_ORIGIN_X, BOARD_ORIGIN_Y)
 }

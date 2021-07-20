@@ -26,6 +26,7 @@ regex = "1.5.4"
 ahash = { version = "0.7.4", features = ["serde"] }
 smallvec = "1.6.1"
 itertools = "0.10.1"
+toml = "0.5.8"
 
 [features]
 # default = ["thread_loop"]

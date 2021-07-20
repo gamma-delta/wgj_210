@@ -9,11 +9,15 @@ use once_cell::sync::Lazy;
 
 use std::path::PathBuf;
 
-use crate::simulator::symbols::Symbol;
+use crate::simulator::{
+    levels::{Level, RawLevel},
+    symbols::Symbol,
+};
 
 pub struct Assets {
     pub textures: Textures,
     pub sounds: Sounds,
+    pub levels: Vec<Level>,
 
     /// Global symbol atlas. Yes global mutability bad shut up
     pub symbol_atlas: Texture2D,
@@ -28,6 +32,7 @@ impl Assets {
         Self {
             textures: Textures::init().await,
             sounds: Sounds::init().await,
+            levels: levels().await,
             symbol_atlas,
         }
     }
@@ -145,4 +150,30 @@ async fn material_vert_frag(vert_stub: &str, frag_stub: &str, params: MaterialPa
 
 async fn material(path_stub: &str, params: MaterialParams) -> Material {
     material_vert_frag(path_stub, path_stub, params).await
+}
+
+async fn levels() -> Vec<Level> {
+    #[derive(serde::Deserialize)]
+    struct Manifest {
+        levels: Vec<String>,
+    }
+
+    let manifest_string = load_string(&ASSETS_ROOT.join("levels/manifest.toml").to_string_lossy())
+        .await
+        .unwrap();
+    let manifest: Manifest = toml::from_str(&manifest_string).unwrap();
+
+    let mut out = Vec::new();
+    for path_stub in manifest.levels {
+        let path = ASSETS_ROOT
+            .join("levels")
+            .join(&path_stub)
+            .with_extension("toml");
+        let level_string = load_string(&path.to_string_lossy()).await.unwrap();
+        let raw: RawLevel = toml::from_str(&level_string).unwrap();
+        let level = raw.to_level(path_stub).unwrap();
+        out.push(level);
+    }
+
+    out
 }

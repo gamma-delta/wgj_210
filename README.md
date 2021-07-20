@@ -73,3 +73,15 @@ I managed to write next to absolutely nothing today, I am very tired, and don't 
 tomorrow.
 
 Ugh.
+
+## July 19th, Night 4
+
+Forgot to write this last night so I'll do it now.
+
+I decided to stop worrying about panning the display and made it a static grid.
+I also have symbol drawing going alright.
+
+I slow down a lot as I work on games. Too bad ... I need to get medicated for ADHD
+or something I swear.
+
+It's just not that fun to keep working on this game anymore. :(

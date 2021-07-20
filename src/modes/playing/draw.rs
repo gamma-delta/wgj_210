@@ -1,75 +1,75 @@
 use ahash::AHashMap;
+use cogs_gamedev::grids::ICoord;
 use macroquad::prelude::*;
 
 use crate::{
     assets::Assets,
     boilerplates::{FrameInfo, GamemodeDrawer},
-    simulator::board::Board,
-    utils::draw::mouse_position_pixel,
+    simulator::{
+        board::Board,
+        symbols::{Symbol, SYMBOL_DISPLAY_SIZE},
+    },
+    utils::draw::{hexcolor, mouse_position_pixel},
     HEIGHT, WIDTH,
 };
 
-use super::{px_to_coord, SelectState, SYMBOL_GAP};
-
-const TILES_ACROSS: usize = (WIDTH / SYMBOL_GAP * 2.0) as usize;
-const TILES_DOWN: usize = (HEIGHT / SYMBOL_GAP * 2.0) as usize;
+use super::{
+    coord_to_px, px_to_coord, SelectState, BOARD_ORIGIN_X, BOARD_ORIGIN_Y, SYMBOLS_ACROSS,
+    SYMBOLS_DOWN, SYMBOL_GAP,
+};
 
 pub(super) struct Drawer {
     pub board: Board,
     pub symbol_indices: AHashMap<u32, usize>,
-
-    pub view: Vec2,
-    pub drag_origin: Option<Vec2>,
 
     pub selection: SelectState,
 }
 
 impl GamemodeDrawer for Drawer {
     fn draw(&self, assets: &Assets, frame_info: FrameInfo) {
-        let (mx, my) = mouse_position_pixel();
-        let view = if let Some(origin) = self.drag_origin {
-            self.view - (vec2(mx, my) - origin) / SYMBOL_GAP
-        } else {
-            self.view
-        };
+        clear_background(BLACK);
 
-        for tile_dx in -1..=TILES_ACROSS as i32 {
-            for tile_dy in -1..=TILES_DOWN as i32 {
-                // symbol positions
-                // each tile is 2x symbol size
-                let corner = (vec2(tile_dx as f32, tile_dy as f32)
-                    - vec2(view.x.fract(), view.y.fract()))
-                    * SYMBOL_GAP
-                    * 2.0;
-                let corner = corner.round();
+        draw_rectangle(
+            BOARD_ORIGIN_X - 2.0,
+            BOARD_ORIGIN_Y - 2.0,
+            SYMBOL_GAP * SYMBOLS_ACROSS as f32 + 3.0,
+            SYMBOL_GAP * SYMBOLS_DOWN as f32 + 3.0,
+            WHITE,
+        );
 
-                // Check the center of the tile for position to avoid imprecision errors
-                let absolute_pos = px_to_coord(corner + Vec2::splat(SYMBOL_GAP), view);
-                let sx = if absolute_pos.x == 0 {
-                    0.0
-                } else {
-                    SYMBOL_GAP * 2.0
-                };
-                let sy = if absolute_pos.y == 0 {
-                    0.0
-                } else {
-                    SYMBOL_GAP * 2.0
-                };
+        for symbol_x in 0..SYMBOLS_ACROSS {
+            for symbol_y in 0..SYMBOLS_DOWN {
+                let pos = ICoord::new(symbol_x as _, symbol_y as _);
+                let corner = coord_to_px(pos);
 
-                draw_texture_ex(
-                    assets.textures.checkerboard,
+                draw_rectangle(
                     corner.x,
                     corner.y,
-                    WHITE,
-                    DrawTextureParams {
-                        source: Some(Rect::new(sx, sy, SYMBOL_GAP * 2.0, SYMBOL_GAP * 2.0)),
-                        ..Default::default()
-                    },
+                    SYMBOL_DISPLAY_SIZE,
+                    SYMBOL_DISPLAY_SIZE,
+                    hexcolor(0x92e8c0_ff),
                 );
-                if absolute_pos.x % 3 == 0 || absolute_pos.y % 3 == 0 {
-                    draw_text(&absolute_pos.to_string(), corner.x, corner.y, 8.0, WHITE);
+
+                if let Some(here) = self.board.symbols.get(&pos) {
+                    let idx = *self
+                        .symbol_indices
+                        .get(&here.code)
+                        .ok_or_else(|| {
+                            format!("{:?} at {} didn't have an entry in the atlas", here, pos)
+                        })
+                        .unwrap();
+                    here.draw(corner, idx, assets);
                 }
             }
+        }
+
+        match &self.selection {
+            SelectState::HoldingFragment { origin, symbols } => {
+                for (pos, sym) in symbols {
+                    let zero_pos = *pos + ICoord::new(-origin.x, -origin.y);
+                }
+            }
+            _ => {}
         }
     }
 }

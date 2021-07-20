@@ -15,6 +15,7 @@ use std::collections::HashMap;
 pub enum Control {
     Click,
     RightClick,
+    Debug,
 }
 
 /// Combo keycode and mouse button code
@@ -49,6 +50,8 @@ impl InputSubscriber {
         controls.insert(InputCode::Mouse(MouseButton::Right), Control::RightClick);
         // Also let middle-click pan
         controls.insert(InputCode::Mouse(MouseButton::Middle), Control::RightClick);
+
+        controls.insert(InputCode::Key(KeyCode::Backslash), Control::Debug);
 
         controls
     }
