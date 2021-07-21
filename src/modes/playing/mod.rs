@@ -2,8 +2,11 @@ mod draw;
 
 use std::mem;
 
-use ahash::AHashMap;
-use cogs_gamedev::{controls::InputHandler, grids::ICoord};
+use ahash::{AHashMap, AHashSet};
+use cogs_gamedev::{
+    controls::InputHandler,
+    grids::{ICoord, IRect},
+};
 use itertools::Itertools;
 use macroquad::prelude::{vec2, Vec2};
 use smallvec::SmallVec;
@@ -23,8 +26,8 @@ use crate::{
 use self::draw::Drawer;
 
 /// Place to start drawing the board from
-const BOARD_ORIGIN_X: f32 = 16.0;
-const BOARD_ORIGIN_Y: f32 = 16.0;
+const BOARD_ORIGIN_X: f32 = 80.0;
+const BOARD_ORIGIN_Y: f32 = 12.0;
 
 const SYMBOLS_ACROSS: usize = 13;
 const SYMBOLS_DOWN: usize = 13;
@@ -37,6 +40,9 @@ pub struct ModePlaying {
     symbol_indices: AHashMap<u32, usize>,
 
     selection: SelectState,
+
+    valid_poses: AHashSet<ICoord>,
+    won: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -56,6 +62,13 @@ enum SelectState {
     },
 }
 
+impl SelectState {
+    /// Returns `true` if the select_state is [`None`].
+    fn is_none(&self) -> bool {
+        matches!(self, Self::None)
+    }
+}
+
 impl ModePlaying {
     pub fn new_from_level(idx: usize, assets: &Assets) -> Self {
         let level = &assets.levels[idx];
@@ -63,12 +76,16 @@ impl ModePlaying {
         let symbol_indices =
             Symbol::stitch_atlas(board.symbols.values().map(|sym| sym.code), assets);
 
-        Self {
+        let mut out = Self {
             level_id: level.id.clone(),
             board,
             symbol_indices,
             selection: SelectState::None,
-        }
+            valid_poses: AHashSet::new(),
+            won: false,
+        };
+        out.check_grammar();
+        out
     }
 }
 
@@ -83,13 +100,11 @@ impl Gamemode for ModePlaying {
 
         let hovered_coord = px_to_coord(vec2(mx, my));
 
-        if controls.clicked_down(Control::Click) {
-            dbg!(hovered_coord);
-        }
-
         if controls.clicked_down(Control::Debug) {
             dbg!(self.board.symbols.get(&hovered_coord), &self.selection);
         }
+
+        let mut check_grammar = false;
 
         match &self.selection {
             SelectState::None => {
@@ -112,18 +127,27 @@ impl Gamemode for ModePlaying {
                         self.selection = SelectState::HoldingFragment {
                             origin: hovered_coord,
                             symbols: extracted,
-                        }
+                        };
+
+                        check_grammar = true;
                     }
                 }
             }
             SelectState::HoldingFragment { origin, symbols } => {
-                if !controls.pressed(Control::Click) {
+                if controls.clicked_down(Control::Click) {
                     // Check if we can place it back
-                    let collision = symbols.iter().any(|(pos, _sym)| {
-                        let newpos = *origin + *pos;
-                        self.board.symbols.contains_key(&newpos)
+                    const BOUNDS: IRect = IRect {
+                        left: 0,
+                        top: 0,
+                        width: SYMBOLS_ACROSS,
+                        height: SYMBOLS_DOWN,
+                    };
+
+                    let collision_or_oob = symbols.iter().any(|(pos, _sym)| {
+                        let newpos = *pos + hovered_coord - *origin;
+                        !BOUNDS.contains(newpos) || self.board.symbols.contains_key(&newpos)
                     });
-                    if !collision {
+                    if !collision_or_oob {
                         // lovely!
                         let (origin, symbols) =
                             match mem::replace(&mut self.selection, SelectState::None) {
@@ -132,14 +156,27 @@ impl Gamemode for ModePlaying {
                                 }
                                 _ => unreachable!(),
                             };
+
+                        let fragment = symbols
+                            .iter()
+                            .map(|(pos, _)| *pos + hovered_coord - origin)
+                            .collect();
+                        self.board.fragments.push(fragment);
+
                         for (pos, sym) in symbols {
-                            let newpos = origin + pos;
+                            let newpos = pos + hovered_coord - origin;
                             let clobber = self.board.symbols.insert(newpos, sym);
                             assert_eq!(clobber, None);
                         }
+
+                        check_grammar = true;
                     }
                 }
             }
+        }
+
+        if check_grammar {
+            self.check_grammar();
         }
 
         Transition::None
@@ -150,7 +187,23 @@ impl Gamemode for ModePlaying {
             board: self.board.clone(),
             symbol_indices: self.symbol_indices.clone(),
             selection: self.selection.clone(),
+            valid_poses: self.valid_poses.clone(),
+            won: self.won,
         })
+    }
+}
+
+impl ModePlaying {
+    fn check_grammar(&mut self) {
+        let (oks, errors) = self.board.check_grammar();
+        self.valid_poses.clear();
+        for ok in oks {
+            self.valid_poses.insert(ok);
+        }
+
+        if self.selection.is_none() && errors.is_empty() {
+            self.won = true;
+        }
     }
 }
 

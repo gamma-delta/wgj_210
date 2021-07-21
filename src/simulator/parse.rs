@@ -35,7 +35,7 @@ pub fn check_from_start(
 
     // We can pretty easily parse this with a state machine.
     // Each state has a mapping of symbol types to what the next state is.
-    let mut state = SpineState::Start;
+    let mut state = SpineState::Origin;
     let mut idx = 0;
     let spine_len = loop {
         let pos = origin + dir.deltas() * idx;
@@ -47,7 +47,7 @@ pub fn check_from_start(
         let next = next_states
             .iter()
             .find_map(|(target, next)| (&posk == target).then_some(*next))
-            .ok_or_else(|| anyhow!("{:?} does not accept {:?}"));
+            .ok_or_else(|| anyhow!("{:?} does not allow {:?}", &state, &posk));
 
         match next {
             Ok(SpineState::Satisfied) => {
@@ -91,8 +91,9 @@ pub fn check_from_start(
             // Check for modifiers down and modifier-modifiers up
 
             'each_mod: for (is_adj, look_dir) in [(true, adj_dir), (false, adv_dir)] {
-                for transverse in 0.. {
-                    let mod_pos = spine_pos + adj_dir.deltas() * transverse;
+                // start counting at 1
+                for transverse in 1.. {
+                    let mod_pos = spine_pos + look_dir.deltas() * transverse;
                     match symbols.get(&mod_pos) {
                         Some(sym) => {
                             let (mod_islands, mod_depth, mod_is_noun) = match sym.part_of_speech {

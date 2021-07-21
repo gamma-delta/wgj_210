@@ -85,3 +85,14 @@ I slow down a lot as I work on games. Too bad ... I need to get medicated for AD
 or something I swear.
 
 It's just not that fun to keep working on this game anymore. :(
+
+## July 21st, Afternoon ... 6
+
+Yes, I've given up working on this game. :(
+
+Too bad... I feel like it could have been interesting. But I'm just too exhausted to work on it now.
+
+If anyone wants to continue working on it for some reason, I'm pretty sure
+parsing and all is implemented correctly. You just need a level-select screen and 
+a bunch more levels. I can update the license to allow you use to use the few game-specific assets
+(but please do not steal my opening screen, it should be easy enough to remove).

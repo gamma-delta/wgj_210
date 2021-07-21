@@ -9,13 +9,13 @@ use ahash::{AHashMap, AHashSet};
 use anyhow::bail;
 use cogs_gamedev::grids::{Direction4, ICoord};
 use itertools::Itertools;
-use macroquad::prelude::{Image, Rect, Texture2D, Vec2};
+use macroquad::prelude::{Color, Image, Rect, Texture2D, Vec2};
 
 use crate::assets::Assets;
 
 pub const SYMBOL_SIZE: usize = 5;
 pub const SYMBOL_DISPLAY_SIZE: f32 = 15.0;
-pub const SYMBOL_GAP: f32 = 16.0;
+pub const SYMBOL_GAP: f32 = 17.0;
 
 /// Info about a symbol.
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -87,13 +87,13 @@ impl Symbol {
         }
     }
 
-    pub fn draw(&self, corner: Vec2, idx: usize, assets: &Assets) {
+    pub fn draw(&self, corner: Vec2, idx: usize, color: Color, assets: &Assets) {
         use macroquad::prelude::*;
         draw_texture_ex(
             assets.symbol_atlas,
             corner.x,
             corner.y,
-            BLACK,
+            color,
             DrawTextureParams {
                 source: Some(Symbol::slice(idx)),
                 dest_size: Some(Vec2::splat(SYMBOL_DISPLAY_SIZE)),

@@ -1,4 +1,4 @@
-use ahash::AHashMap;
+use ahash::{AHashMap, AHashSet};
 use cogs_gamedev::grids::ICoord;
 use macroquad::prelude::*;
 
@@ -23,6 +23,9 @@ pub(super) struct Drawer {
     pub symbol_indices: AHashMap<u32, usize>,
 
     pub selection: SelectState,
+
+    pub valid_poses: AHashSet<ICoord>,
+    pub won: bool,
 }
 
 impl GamemodeDrawer for Drawer {
@@ -32,8 +35,8 @@ impl GamemodeDrawer for Drawer {
         draw_rectangle(
             BOARD_ORIGIN_X - 2.0,
             BOARD_ORIGIN_Y - 2.0,
-            SYMBOL_GAP * SYMBOLS_ACROSS as f32 + 3.0,
-            SYMBOL_GAP * SYMBOLS_DOWN as f32 + 3.0,
+            SYMBOL_GAP * SYMBOLS_ACROSS as f32 + 2.0,
+            SYMBOL_GAP * SYMBOLS_DOWN as f32 + 2.0,
             WHITE,
         );
 
@@ -58,18 +61,30 @@ impl GamemodeDrawer for Drawer {
                             format!("{:?} at {} didn't have an entry in the atlas", here, pos)
                         })
                         .unwrap();
-                    here.draw(corner, idx, assets);
+
+                    let color = if self.valid_poses.contains(&pos) {
+                        hexcolor(0x6abe30_ff) // green
+                    } else {
+                        hexcolor(0xac3232_ff) // red
+                    };
+
+                    here.draw(corner, idx, color, assets);
                 }
             }
         }
 
-        match &self.selection {
-            SelectState::HoldingFragment { origin, symbols } => {
-                for (pos, sym) in symbols {
-                    let zero_pos = *pos + ICoord::new(-origin.x, -origin.y);
-                }
+        if let SelectState::HoldingFragment { origin, symbols } = &self.selection {
+            let (mx, my) = mouse_position_pixel();
+            for (pos, sym) in symbols {
+                let zero_pos = *pos + ICoord::new(-origin.x, -origin.y);
+                let corner = vec2(zero_pos.x as f32, zero_pos.y as f32) * SYMBOL_GAP + vec2(mx, my)
+                    - Vec2::splat(SYMBOL_DISPLAY_SIZE / 2.0);
+                let corner = corner.round();
+
+                let idx = self.symbol_indices[&sym.code];
+
+                sym.draw(corner, idx, hexcolor(0x14182e_ff), assets);
             }
-            _ => {}
         }
     }
 }
